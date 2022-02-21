@@ -1,5 +1,6 @@
 package org.Artur.ecommerce;
 
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -13,15 +14,18 @@ public class NewOrderMain {
         var producer = new KafkaProducer<String, String>(properties());
         var value = "123,456,789"; // value  (ID do pedido, usuario e o valor da compra)
         var record = new ProducerRecord<>("ECOMMERCE_NEW_ORDER", value, value); // topic, chave e valor
-
         // Como send eh assincrono, foi usado get para aguardar a finalizacao
-        producer.send(record, (data, ex) -> {
-            if(ex !=null){
+        Callback callback = (data, ex) -> {
+            if (ex != null) {
                 ex.printStackTrace();
                 return;
             }
-            System.out.println("Sucesso enviando" + data.topic()+":::partition " + data.partition() + " / offset " + data.offset() + " / timestamp " + data.timestamp());
-        }).get();
+            System.out.println("Sucesso " + data.topic() + ":::partition " + data.partition() + " / offset " + data.offset() + " / timestamp " + data.timestamp());
+        };
+        var email = "Thank you for your order! We are processing your order!";
+        var emailRecord = new ProducerRecord<>("ECOMMERCE_SEND_EMAIL", email, email);
+        producer.send(record, callback).get();
+        producer.send(emailRecord, callback).get();
     }
 
     private static Properties properties() {
